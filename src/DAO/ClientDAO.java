@@ -28,7 +28,7 @@ public class ClientDAO {
     }
 
     // get client by id
-    public static Optional<Client> findById(int id) {
+    public Optional<Client> findById(int id) {
         String SQLquery = "SELECT * FROM client WHERE id = ?";
 
         try (Connection connection = ConnectionDAO.getConnection()){
@@ -55,7 +55,7 @@ public class ClientDAO {
     }
 
     // get all clients
-    public static List<Client> findAll() {
+    public List<Client> findAll() {
         List<Client> clients = new ArrayList<>();
         String SQLquery = "SELECT * FROM client";
 
