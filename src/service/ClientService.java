@@ -2,6 +2,7 @@ package service;
 
 import DAO.ClientDAO;
 import entity.Client;
+import java.util.Optional;
 
 public class ClientService {
     ClientDAO clientDAO = new ClientDAO();
@@ -16,8 +17,8 @@ public class ClientService {
     }
 
     // get client by id
-    public void getClientById(int id) {
-        clientDAO.findById(id);
+    public Optional<Client> getClientById(int id) {
+        return clientDAO.findById(id);
     }
 
     // get all clients
