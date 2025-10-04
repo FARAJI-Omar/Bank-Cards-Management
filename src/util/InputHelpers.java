@@ -27,7 +27,7 @@ public class InputHelpers {
     public static double readDouble(String message){
         while (true){
             try{
-                System.out.printf(message + ": ");
+                System.out.print(message + ": ");
                 return Double.parseDouble(scanner.nextLine().trim());
             } catch (NumberFormatException e){
                 System.out.println("Invalid number, try again.");
