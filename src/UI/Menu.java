@@ -1,5 +1,9 @@
 package UI;
 
+import DAO.OperationDAO;
+import service.ClientService;
+import service.FraudService;
+import service.OperationService;
 import util.InputHelpers;
 import util.Validators;
 import util.CardNumberGenerator;
@@ -17,7 +21,11 @@ public class Menu {
     // Centralized DAO instances
     private static final ClientDAO clientDAO = new ClientDAO();
     private static final CardDAO cardDAO = new CardDAO();
+    private static final OperationDAO operationDAO = new OperationDAO();
     private static final CardService cardService = new CardService(cardDAO);
+    private static final FraudService fraudService = new FraudService();
+    private static final ClientService clientService = new ClientService(clientDAO);
+    private static final OperationService operationService = new OperationService(operationDAO, cardDAO, fraudService);
 
     public static void menu(){
         while (true){
@@ -29,9 +37,9 @@ public class Menu {
             System.out.println("5. Fraud Analysis");
             System.out.println("6. Suspend/Block a Card");
             System.out.println("7. Reports & Analytics");
-            System.out.println("8. Exit");
+            System.out.println("0. Exit");
 
-            int choice = InputHelpers.readInt("\nPlease select an option (1-7): ");
+            int choice = InputHelpers.readInt("\nPlease select an option (1-7, 0 to exit): ");
 
             switch (choice){
                 case 1:
@@ -41,7 +49,7 @@ public class Menu {
                     createCardForClient();
                     break;
                 case 3:
-                    System.out.println("Make an Operation selected");
+                    operationMenu();
                     break;
                 case 4:
                     System.out.println("View a Card History selected");
@@ -55,7 +63,7 @@ public class Menu {
                 case 7:
                     System.out.println("Reports & Analytics selected");
                     break;
-                case 8:
+                case 0:
                     System.out.println("Exiting the system. Goodbye!");
                     System.exit(0);
                     break;
@@ -186,4 +194,135 @@ public class Menu {
     }
 
     // make an operation
+    private static void operationMenu(){
+        while (true){
+            System.out.println("\n=== Choose Operation ===\n");
+            System.out.println("1. Purchase");
+            System.out.println("2. Withdraw");
+            System.out.println("3. Online Purchase");
+            System.out.println("0. Exit");
+
+            int choice = InputHelpers.readInt("\nPlease select an option (1-3, 0 to exit): ");
+
+            switch (choice) {
+                case 1: {
+                    System.out.println("\n== Purchase ==\n");
+                    displayAllClients();
+                    int clientId = InputHelpers.readInt("\nEnter the Client ID to select a card: ");
+                    Optional<Client> existClient = clientService.getClientById(clientId);
+                    if (existClient.isEmpty()) {
+                        System.out.println("\nClient with ID " + clientId + " not found!\n Cancelling operation...");
+                        break;
+                    }
+                    int cardId = selectClientCard(clientId);
+                    if (cardId == -1) break;
+
+                    double amount = InputHelpers.readDouble("Enter purchase amount: ");
+                    String location = InputHelpers.readString("Enter purchase location: ");
+                    operationService.purchase(cardId, amount, location);
+                    return;
+                }
+                case 2: {
+                    System.out.println("\n== Withdraw ==\n");
+                    displayAllClients();
+
+                    int clientId = InputHelpers.readInt("\nEnter the Client ID to select a card: ");
+                    Optional<Client> existClient = clientService.getClientById(clientId);
+                    if (existClient.isEmpty()) {
+                        System.out.println("\nClient with ID " + clientId + " not found!\nCancelling operation...");
+                        break;
+                    }
+
+                    int cardId = selectClientCard(clientId);
+                    if (cardId == -1) break;
+
+                    double amount = InputHelpers.readDouble("Enter withdrawal amount: ");
+                    String location = InputHelpers.readString("Enter withdrawal location: ");
+
+                    operationService.withdraw(cardId, amount, location);
+                    return;
+                }
+                case 3: {
+                    System.out.println("\n== Online Purchase ==\n");
+                    displayAllClients();
+
+                    int clientId = InputHelpers.readInt("\nEnter the Client ID to select a card: ");
+                    Optional<Client> existClient = clientService.getClientById(clientId);
+                    if (existClient.isEmpty()) {
+                        System.out.println("\nClient with ID " + clientId + " not found!\nCancelling operation...");
+                        break;
+                    }
+
+                    int cardId = selectClientCard(clientId);
+                    if (cardId == -1) break;
+
+                    double amount = InputHelpers.readDouble("Enter online purchase amount: ");
+                    String location = InputHelpers.readString("Enter website/store name: ");
+
+                    operationService.onlinePurchase(cardId, amount, location);
+                    return;
+                }
+                case 0:
+                    System.out.println("Exiting operation menu.");
+                    return;
+                default:
+                    System.out.println("Invalid option. Please select between 1-3.");
+                    break;
+            }
+        }
+    }
+
+    // Display all cards of a client
+    private static int selectClientCard(int clientId) {
+        List<Card> cards = cardDAO.getCardsByClientId(clientId);
+        if (cards.isEmpty()) {
+            System.out.println("No cards found for this client.");
+            return -1;
+        }
+
+        System.out.println("\n============ Client's Cards ============\n");
+        System.out.printf("%-5s %-15s %-15s %-12s %-10s %-10s%n",
+                "No", "Card ID", "Card Type", "Status", "Limit/Balance", "Expires");
+
+        System.out.println("--------------------------------------------------------------------------");
+
+        int index = 1;
+        for (Card card : cards) {
+            String type;
+            String value;
+
+            if (card instanceof CreditCard credit) {
+                type = "Credit";
+                value = String.format("Monthly: %.2f", credit.getMonthlyLimit());
+            } else if (card instanceof DebitCard debit) {
+                type = "Debit";
+                value = String.format("Daily: %.2f", debit.getDailyLimit());
+            } else if (card instanceof PrepaidCard prepaid) {
+                type = "Prepaid";
+                value = String.format("Balance: %.2f", prepaid.getBalance());
+            } else {
+                type = "Unknown";
+                value = "-";
+            }
+
+            System.out.printf("%-5d %-15d %-15s %-12s %-10s %-10s%n",
+                    index++,
+                    card.getId(),
+                    type,
+                    card.getStatus(),
+                    value,
+                    card.getExpirationDate().toLocalDate());
+        }
+        System.out.println("--------------------------------------------------------------------------");
+
+        int selection;
+        do {
+            selection = InputHelpers.readInt("Enter card number from list (1-" + cards.size() + "): ");
+            if (selection < 1 || selection > cards.size()) {
+                System.out.println("Invalid choice. Try again.");
+            }
+        } while (selection < 1 || selection > cards.size());
+
+        return cards.get(selection - 1).getId();
+    }
 }
