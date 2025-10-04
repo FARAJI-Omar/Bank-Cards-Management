@@ -36,7 +36,7 @@ public class Menu {
             System.out.println("3. Make an Operation");
             System.out.println("4. View a Card History");
             System.out.println("5. Fraud Analysis");
-            System.out.println("6. Suspend/Block a Card");
+            System.out.println("6. Activate/Suspend/Block a Card");
             System.out.println("7. Reports & Analytics");
             System.out.println("0. Exit");
 
@@ -59,7 +59,7 @@ public class Menu {
                     System.out.println("Fraud Analysis selected");
                     break;
                 case 6:
-                    System.out.println("Suspend/Block a Card selected");
+                    updateCardStatus();
                     break;
                 case 7:
                     System.out.println("Reports & Analytics selected");
@@ -351,11 +351,7 @@ public class Menu {
             // Display card operations
             getCardOperations(cardId);
 
-            // Ask if user wants to check another card
-            String choice = InputHelpers.readString("\nEnter 0 to go back: ");
-            if (!choice.equalsIgnoreCase("0")) {
-                return;
-            }
+            break;
         }
     }
 
@@ -383,5 +379,64 @@ public class Menu {
         }
         System.out.println("--------------------------------------------------------------------------------");
         System.out.println("Total operations: " + operations.size());
+    }
+
+    private static void updateCardStatus() {
+        System.out.println("\n== Activate/Suspend/Block Card ==\n");
+        while (true) {
+            displayAllClients();
+            int clientId = InputHelpers.readInt("\nEnter the Client ID to select a card (0 to go back): ");
+
+            if (clientId == 0) {
+                return;
+            }
+
+            Optional<Client> existClient = clientService.getClientById(clientId);
+            if (existClient.isEmpty()) {
+                System.out.println("\nClient with ID " + clientId + " not found! Please try again.");
+                continue;
+            }
+
+            int cardId = selectClientCard(clientId);
+            if (cardId == -1) {
+                continue;
+            }
+
+            // update card status
+            while (true) {
+                System.out.println("\nSelect new status:");
+                System.out.println("1. Activate");
+                System.out.println("2. Suspend");
+                System.out.println("3. Block");
+                System.out.println("0. Go Back");
+
+                int statusChoice = InputHelpers.readInt("Enter choice (0-3): ");
+
+                switch (statusChoice) {
+                    case 1 -> {
+                        cardService.activateCard(cardId);
+                        System.out.println("Card activated successfully.\n");
+                    }
+                    case 2 -> {
+                        cardService.suspendCard(cardId);
+                        System.out.println("Card suspended successfully.\n");
+                    }
+                    case 3 -> {
+                        cardService.blockCard(cardId);
+                        System.out.println("Card blocked successfully.\n");
+                    }
+                    case 0 -> {
+                        return;
+                    }
+                    default -> {
+                        System.out.println("Invalid choice. Please try again.");
+                        continue;
+                    }
+                }
+                break; // Exit the status update loop after a valid operation
+            }
+
+            break;
+        }
     }
 }

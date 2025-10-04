@@ -197,4 +197,21 @@ public class CardDAO {
             System.out.println("Unexpected error: " + e.getMessage());
         }
     }
+
+    // update card status (suspend/block/activate)
+    public void updateStatus(int cardId, Status newStatus) {
+        String SQLquery = "UPDATE card SET status = ? WHERE id = ?";
+
+        try (Connection connection = ConnectionDAO.getConnection()) {
+            PreparedStatement preparedStatement = connection.prepareStatement(SQLquery);
+
+            preparedStatement.setString(1, newStatus.name());
+            preparedStatement.setInt(2, cardId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println("Error updating card status: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Unexpected error: " + e.getMessage());
+        }
+    }
 }
