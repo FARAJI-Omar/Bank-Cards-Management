@@ -20,11 +20,7 @@ public class OperationDAO {
             preparedStatement.setString(3, type);
             preparedStatement.setString(4, location);
             preparedStatement.setInt(5, cardId);
-
-            int rowsInserted = preparedStatement.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("Operation inserted successfully");
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error inserting operation: " + e.getMessage());
         }
