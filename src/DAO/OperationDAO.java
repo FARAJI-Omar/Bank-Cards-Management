@@ -55,4 +55,27 @@ public class OperationDAO {
         }
         return operations;
     }
+
+    // get recent locations for fraud detection
+    public List<String> getRecentLocationsByCardId(int cardId, int limit) {
+        List<String> locations = new ArrayList<>();
+        String SQLquery = "SELECT location FROM cardoperation WHERE cardId = ? ORDER BY operationDate DESC LIMIT ?";
+
+        try (Connection connection = ConnectionDAO.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SQLquery)) {
+            preparedStatement.setInt(1, cardId);
+            preparedStatement.setInt(2, limit);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                locations.add(resultSet.getString("location"));
+            }
+
+        } catch (SQLException e) {
+            System.out.println("SQL error: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Unexpected error: " + e.getMessage());
+        }
+        return locations;
+    }
 }
