@@ -8,8 +8,11 @@ import util.InputHelpers;
 import util.Validators;
 import util.CardNumberGenerator;
 import util.DateFormatter;
+
+import util.FraudRules;
 import DAO.ClientDAO;
 import DAO.CardDAO;
+import DAO.FraudAlertDAO;
 import entity.Client;
 import entity.*;
 import entity.enums.Status;
@@ -23,10 +26,12 @@ public class Menu {
     private static final ClientDAO clientDAO = new ClientDAO();
     private static final CardDAO cardDAO = new CardDAO();
     private static final OperationDAO operationDAO = new OperationDAO();
+    private static final FraudAlertDAO fraudAlertDAO = new FraudAlertDAO();
     private static final CardService cardService = new CardService(cardDAO);
-    private static final FraudService fraudService = new FraudService();
+    private static final FraudService fraudService = new FraudService(fraudAlertDAO);
     private static final ClientService clientService = new ClientService(clientDAO);
-    private static final OperationService operationService = new OperationService(operationDAO, cardDAO, fraudService);
+    private static final FraudRules fraudRules = new FraudRules(fraudAlertDAO, operationDAO);
+    private static final OperationService operationService = new OperationService(operationDAO, cardDAO, fraudService, fraudRules);
 
     public static void menu(){
         while (true){
@@ -56,7 +61,7 @@ public class Menu {
                     cardHistory();
                     break;
                 case 5:
-                    System.out.println("Fraud Analysis selected");
+                    displayFraudAlerts();
                     break;
                 case 6:
                     updateCardStatus();
@@ -439,4 +444,32 @@ public class Menu {
             break;
         }
     }
+
+    private static void displayFraudAlerts() {
+        List<Object[]> history = fraudService.getAllFraudHistory();
+
+        System.out.println("\n============ Fraud Alerts ============\n");
+        System.out.printf("%-3s %-7s %-8s %-15s %-27s %-11s %-50s%n",
+                "ID", "Level", "CardID", "Client Name", "Client Email", "Phone", "Description");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
+
+        for (Object[] record : history) {
+            FraudAlert fraud = (FraudAlert) record[0];
+            String name = (String) record[1];
+            String email = (String) record[2];
+            String phone = (String) record[3];
+
+            System.out.printf("%-3d %-10s %-6d %-15s %-25s %-12s %-50s%n",
+                    fraud.id(),
+                    fraud.level(),
+                    fraud.cardId(),
+                    name,
+                    email,
+                    phone,
+                    fraud.description());
+        }
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
+    }
+
+
 }

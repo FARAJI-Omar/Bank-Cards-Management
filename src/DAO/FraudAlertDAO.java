@@ -56,26 +56,40 @@ public class FraudAlertDAO {
     }
 
     // get all fraud alerts
-    public List<FraudAlert> findAll(){
-        List<FraudAlert> alerts = new ArrayList<>();
-        String SQLquery = "SELECT * FROM fraudalert";
+    public List<Object[]> findAll(){
+        List<Object[]> alerts = new ArrayList<>();
+        String SQLquery = """
+            SELECT f.id, f.description, f.level, f.cardId, c.name, c.email, c.phone
+            FROM fraudalert f
+            JOIN card cd ON f.cardId = cd.id
+            JOIN client c ON cd.clientId = c.id
+            ORDER BY f.id DESC
+            """;
 
         try (Connection connection = ConnectionDAO.getConnection()){
             PreparedStatement preparedStatement = connection.prepareStatement(SQLquery);
 
             ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()){
-                alerts.add(new FraudAlert(
+            while (resultSet.next()) {
+                FraudAlert fraudAlert = new FraudAlert(
                         resultSet.getInt("id"),
                         resultSet.getString("description"),
                         Level.valueOf(resultSet.getString("level")),
                         resultSet.getInt("cardId")
-                ));
+                );
+
+                alerts.add(new Object[]{
+                        fraudAlert,
+                        resultSet.getString("name"),
+                        resultSet.getString("email"),
+                        resultSet.getString("phone")
+                });
             }
         } catch (SQLException e){
             System.out.println("SQL error: " + e.getMessage());
         } catch (Exception e){
             System.out.println("Unexpected error: " + e.getMessage());
-        } return alerts;
+        }
+        return alerts;
     }
 }

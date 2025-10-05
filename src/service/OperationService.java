@@ -4,6 +4,7 @@ import DAO.CardDAO;
 import DAO.OperationDAO;
 import entity.*;
 import entity.enums.Type;
+import util.FraudRules;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -12,23 +13,31 @@ public class OperationService {
     private final OperationDAO operationDAO;
     private final CardDAO cardDAO;
     private final FraudService fraudService;
+    private final FraudRules fraudRules;
 
-    public OperationService(OperationDAO operationDAO, CardDAO cardDAO, FraudService fraudService) {
+    public OperationService(OperationDAO operationDAO, CardDAO cardDAO, FraudService fraudService, FraudRules fraudRules) {
         this.operationDAO = operationDAO;
         this.cardDAO = cardDAO;
         this.fraudService = fraudService;
+        this.fraudRules = fraudRules;
     }
 
     public void purchase(int cardId, double amount, String location) {
         executeOperation(cardId, amount, location, Type.PURCHASE);
+        Optional<Card> card = cardDAO.findById(cardId);
+        fraudRules.evaluate(card, amount, Type.PURCHASE, location);
     }
 
     public void withdraw(int cardId, double amount, String location) {
         executeOperation(cardId, amount, location, Type.WITHDRAWAL);
+        Optional<Card> card = cardDAO.findById(cardId);
+        fraudRules.evaluate(card, amount, Type.WITHDRAWAL, location);
     }
 
     public void onlinePurchase(int cardId, double amount, String location) {
         executeOperation(cardId, amount, location, Type.ONLINE_PAYMENT);
+        Optional<Card> card = cardDAO.findById(cardId);
+        fraudRules.evaluate(card, amount, Type.ONLINE_PAYMENT, location);
     }
 
     private void executeOperation(int cardId, double amount, String location, Type type) {
